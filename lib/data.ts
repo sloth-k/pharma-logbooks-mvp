@@ -4,6 +4,7 @@ export {
   createTemplate,
   getDashboardSummary,
   getLogbookDetail,
+  getLogbooks,
   getTemplateDefinition,
   getTemplates,
   signLogbook,

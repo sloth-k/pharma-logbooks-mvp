@@ -17,6 +17,11 @@ export type DashboardSummary = {
   availableTemplates: TemplateSummary[];
 };
 
+export type LogbookListFilter = {
+  statuses?: LogbookStatus[];
+  businessDate?: string;
+};
+
 export type LogbookSummary = {
   id: string;
   logbookNo: string;

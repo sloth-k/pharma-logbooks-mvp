@@ -18,21 +18,24 @@ export default async function DashboardPage() {
       description="Work queue for operators, supervisors, and QA reviewers."
     >
       <div className="grid three">
-        <section className="card metric">
+        <Link className="card metric" href="/logbooks?status=draft,in_progress">
           <span className="eyebrow">Open logbooks</span>
           <strong>{data.counts.open}</strong>
           <span className="muted">Draft or in-progress execution records</span>
-        </section>
-        <section className="card metric">
+        </Link>
+        <Link className="card metric" href="/logbooks?status=submitted,under_review">
           <span className="eyebrow">Pending review</span>
           <strong>{data.counts.pendingReview}</strong>
           <span className="muted">Submitted records awaiting QA review</span>
-        </section>
-        <section className="card metric">
+        </Link>
+        <Link
+          className="card metric"
+          href={`/logbooks?status=approved&businessDate=${new Date().toISOString().slice(0, 10)}`}
+        >
           <span className="eyebrow">Approved today</span>
           <strong>{data.counts.approvedToday}</strong>
           <span className="muted">Final sign-offs completed in the last shift cycle</span>
-        </section>
+        </Link>
       </div>
 
       <div className="grid two" style={{ marginTop: 18 }}>

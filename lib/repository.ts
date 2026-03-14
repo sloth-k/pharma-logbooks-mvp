@@ -7,6 +7,7 @@ import type {
   CreateTemplateInput,
   DashboardSummary,
   LogbookDetail,
+  LogbookListFilter,
   SignRecordInput,
   TemplateDefinition,
   TemplateSummary
@@ -98,6 +99,52 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     recentLogbooks,
     availableTemplates: templates
   };
+}
+
+export async function getLogbooks(filter: LogbookListFilter = {}) {
+  if (!isSupabaseConfigured()) {
+    let items = mockDashboard.recentLogbooks;
+
+    if (filter.statuses && filter.statuses.length > 0) {
+      items = items.filter((item) => filter.statuses?.includes(item.status));
+    }
+
+    if (filter.businessDate) {
+      items = items.filter((item) => item.businessDate === filter.businessDate);
+    }
+
+    return items;
+  }
+
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("logbooks")
+    .select("id, logbook_no, business_date, shift_code, status, areas(name), logbook_templates(name)")
+    .order("created_at", { ascending: false });
+
+  if (filter.statuses && filter.statuses.length > 0) {
+    query = query.in("status", filter.statuses);
+  }
+
+  if (filter.businessDate) {
+    query = query.eq("business_date", filter.businessDate);
+  }
+
+  const { data } = await query.limit(50);
+
+  if (!data) {
+    return [];
+  }
+
+  return data.map((row: Record<string, unknown>) => ({
+    id: String(row.id),
+    logbookNo: String(row.logbook_no),
+    templateName: relatedName(row.logbook_templates, "Template"),
+    areaName: relatedName(row.areas, "Area"),
+    status: row.status,
+    businessDate: String(row.business_date),
+    shiftCode: String(row.shift_code ?? "-")
+  })) as DashboardSummary["recentLogbooks"];
 }
 
 export async function getTemplates(): Promise<TemplateSummary[]> {
