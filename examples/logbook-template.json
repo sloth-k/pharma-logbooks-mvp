@@ -1,0 +1,126 @@
+{
+  "templateCode": "EQ-CLEANING-001",
+  "templateName": "Equipment Cleaning Logbook",
+  "category": "equipment_cleaning",
+  "version": 1,
+  "appliesTo": {
+    "siteScope": "site-a",
+    "departmentScope": "production"
+  },
+  "headerFields": [
+    {
+      "key": "equipment_id",
+      "label": "Equipment",
+      "type": "equipment_picker",
+      "required": true
+    },
+    {
+      "key": "cleaning_date",
+      "label": "Cleaning Date",
+      "type": "date",
+      "required": true
+    },
+    {
+      "key": "shift_code",
+      "label": "Shift",
+      "type": "select",
+      "required": true,
+      "options": ["A", "B", "C"]
+    }
+  ],
+  "sections": [
+    {
+      "key": "pre_use_checks",
+      "title": "Pre-Use Cleaning Checks",
+      "repeatable": false,
+      "fields": [
+        {
+          "key": "equipment_status_label",
+          "label": "Status Label Checked",
+          "type": "checkbox",
+          "required": true
+        },
+        {
+          "key": "line_clearance_done",
+          "label": "Line Clearance Done",
+          "type": "checkbox",
+          "required": true
+        },
+        {
+          "key": "cleaned_by",
+          "label": "Cleaned By",
+          "type": "user_picker",
+          "required": true
+        },
+        {
+          "key": "checked_time",
+          "label": "Checked Time",
+          "type": "time",
+          "required": true
+        },
+        {
+          "key": "remarks",
+          "label": "Remarks",
+          "type": "text",
+          "required": false,
+          "maxLength": 250
+        }
+      ]
+    },
+    {
+      "key": "cleaning_agents",
+      "title": "Cleaning Agent Consumption",
+      "repeatable": true,
+      "fields": [
+        {
+          "key": "agent_name",
+          "label": "Cleaning Agent",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "quantity",
+          "label": "Quantity",
+          "type": "number",
+          "required": true,
+          "min": 0
+        },
+        {
+          "key": "uom",
+          "label": "UOM",
+          "type": "select",
+          "required": true,
+          "options": ["mL", "L", "g", "kg"]
+        }
+      ]
+    }
+  ],
+  "workflow": {
+    "statuses": ["draft", "in_progress", "submitted", "under_review", "approved"],
+    "signatureSteps": [
+      {
+        "step": 1,
+        "role": "operator",
+        "meaning": "performed",
+        "required": true
+      },
+      {
+        "step": 2,
+        "role": "qa_reviewer",
+        "meaning": "reviewed",
+        "required": true
+      },
+      {
+        "step": 3,
+        "role": "qa_approver",
+        "meaning": "approved",
+        "required": true
+      }
+    ]
+  },
+  "rules": {
+    "allowCorrectionsAfterSubmit": true,
+    "correctionReasonRequired": true,
+    "requireAttachmentOnException": false
+  }
+}
