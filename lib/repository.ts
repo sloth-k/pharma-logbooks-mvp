@@ -266,6 +266,29 @@ function requireActor(actorUserId: string | undefined) {
   return actorUserId;
 }
 
+async function buildUniqueLogbookNo(
+  supabase: ReturnType<typeof createAdminClient>,
+  departmentId: string,
+  businessDate: string,
+  shiftCode: string
+) {
+  const dayToken = businessDate.replaceAll("-", "");
+  const departmentToken = departmentId.slice(0, 4).toUpperCase();
+  const prefix = `LB-${departmentToken}-${dayToken}-${shiftCode}`;
+
+  const { data: existingRows, error } = await supabase
+    .from("logbooks")
+    .select("logbook_no")
+    .ilike("logbook_no", `${prefix}%`);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const nextSequence = (existingRows?.length ?? 0) + 1;
+  return `${prefix}-${String(nextSequence).padStart(3, "0")}`;
+}
+
 export async function createTemplate(input: CreateTemplateInput, actorUserId?: string) {
   if (!isSupabaseConfigured()) {
     return {
@@ -316,33 +339,43 @@ export async function createLogbook(input: CreateLogbookInput, actorUserId?: str
     throw new Error(versionError?.message ?? "Template version not found.");
   }
 
-  const logbookNo = `LB-${input.departmentId.slice(0, 4).toUpperCase()}-${input.businessDate.replaceAll("-", "")}-${input.shiftCode}`;
-  const { data, error } = await supabase
-    .from("logbooks")
-    .insert({
-      template_version_id: input.templateVersionId,
-      template_id: versionRow.template_id,
-      site_id: input.siteId,
-      department_id: input.departmentId,
-      area_id: input.areaId,
-      equipment_id: input.equipmentId ?? null,
-      business_date: input.businessDate,
-      shift_code: input.shiftCode,
-      logbook_no: logbookNo,
-      created_by: userId
-    })
-    .select("id, status, logbook_no")
-    .single();
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const logbookNo =
+      attempt === 0
+        ? await buildUniqueLogbookNo(supabase, input.departmentId, input.businessDate, input.shiftCode)
+        : `${await buildUniqueLogbookNo(supabase, input.departmentId, input.businessDate, input.shiftCode)}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
 
-  if (error) {
-    throw new Error(error.message);
+    const { data, error } = await supabase
+      .from("logbooks")
+      .insert({
+        template_version_id: input.templateVersionId,
+        template_id: versionRow.template_id,
+        site_id: input.siteId,
+        department_id: input.departmentId,
+        area_id: input.areaId,
+        equipment_id: input.equipmentId ?? null,
+        business_date: input.businessDate,
+        shift_code: input.shiftCode,
+        logbook_no: logbookNo,
+        created_by: userId
+      })
+      .select("id, status, logbook_no")
+      .single();
+
+    if (!error) {
+      return {
+        logbookId: data.id,
+        status: data.status,
+        logbookNo: data.logbook_no
+      };
+    }
+
+    if (!error.message.includes("logbooks_logbook_no_key")) {
+      throw new Error(error.message);
+    }
   }
 
-  return {
-    logbookId: data.id,
-    status: data.status,
-    logbookNo: data.logbook_no
-  };
+  throw new Error("Could not generate a unique logbook number.");
 }
 
 export async function createLogEntry(logbookId: string, input: CreateLogEntryInput, actorUserId?: string) {
